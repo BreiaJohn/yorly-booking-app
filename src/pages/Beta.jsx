@@ -59,6 +59,9 @@ export default function Beta() {
 if (error) throw error
 
 const { error: emailError } =
+
+// beta email notification enabled
+console.log("Calling send-beta-application...")
   await supabase.functions.invoke("send-beta-application", {
     body: {
       fullName: formData.fullName.trim(),
@@ -68,6 +71,8 @@ const { error: emailError } =
       goals: formData.goals.trim(),
     },
   })
+  console.log("Function response:", data)
+console.log("Function error:", emailError)
 
 if (emailError) {
   console.error(emailError)
