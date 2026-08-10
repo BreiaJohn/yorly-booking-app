@@ -46,17 +46,34 @@ export default function Beta() {
     setSubmitting(true)
 
     try {
-      const { error } = await supabase.from("beta_applications").insert({
-        full_name: formData.fullName.trim(),
-        email: formData.email.trim().toLowerCase(),
-        business_name: formData.businessName.trim() || null,
-        business_type: formData.businessType.trim(),
-        goals: formData.goals.trim(),
-      })
+      const { error } = await supabase
+  .from("beta_applications")
+  .insert({
+    full_name: formData.fullName.trim(),
+    email: formData.email.trim().toLowerCase(),
+    business_name: formData.businessName.trim() || null,
+    business_type: formData.businessType.trim(),
+    goals: formData.goals.trim(),
+  })
 
-      if (error) throw error
+if (error) throw error
 
-      setSubmitted(true)
+const { error: emailError } =
+  await supabase.functions.invoke("send-beta-application", {
+    body: {
+      fullName: formData.fullName.trim(),
+      email: formData.email.trim().toLowerCase(),
+      businessName: formData.businessName.trim(),
+      businessType: formData.businessType.trim(),
+      goals: formData.goals.trim(),
+    },
+  })
+
+if (emailError) {
+  console.error(emailError)
+}
+
+setSubmitted(true)
 
       setFormData({
         fullName: "",
