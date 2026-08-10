@@ -43,7 +43,11 @@ export default function Beta() {
       return
     }
 
+    console.log("Submit button clicked")
+
     setSubmitting(true)
+
+    console.log("Passed validation")
 
     try {
       const { error } = await supabase
@@ -58,10 +62,9 @@ export default function Beta() {
 
 if (error) throw error
 
-const { error: emailError } =
-
-// beta email notification enabled
 console.log("Calling send-beta-application...")
+
+const { data, error: emailError } =
   await supabase.functions.invoke("send-beta-application", {
     body: {
       fullName: formData.fullName.trim(),
@@ -71,11 +74,15 @@ console.log("Calling send-beta-application...")
       goals: formData.goals.trim(),
     },
   })
-  console.log("Function response:", data)
+
+console.log("Function response:", data)
 console.log("Function error:", emailError)
 
 if (emailError) {
-  console.error(emailError)
+  console.error(
+    "Beta notification email failed:",
+    emailError
+  )
 }
 
 setSubmitted(true)
