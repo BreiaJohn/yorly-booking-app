@@ -290,14 +290,9 @@ if (bookingError) {
 const { data, error } = await supabase.functions.invoke(
   "create-checkout-session",
   {
-    body: {
-      bookingId: booking.id,
-      serviceName: bookingDetails.service,
-      amount: Math.round(bookingDetails.price * 100),
-      businessName: business.business_name,
-      customerEmail: bookingDetails.email,
-      username: business.username,
-    },
+  body: {
+  bookingId: booking.id,
+},
   }
 )
 
