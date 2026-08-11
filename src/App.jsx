@@ -19,6 +19,7 @@ import Services from "./pages/Services"
 import Clients from "./pages/Clients"
 import Payments from "./pages/Payments"
 import Settings from "./pages/Settings"
+import AdminDashboard from "./pages/AdminDashboard"
 
 import PublicBooking from "./pages/PublicBooking"
 import PaymentSuccess from "./pages/PaymentSuccess"
@@ -127,6 +128,8 @@ function App() {
             }
           />
 
+          <Route path="/admin" element={<AdminDashboard />} />
+
           <Route
             path="/settings"
             element={
@@ -136,6 +139,7 @@ function App() {
             }
           />
         </Routes>
+        
       </div>
     </>
   )
