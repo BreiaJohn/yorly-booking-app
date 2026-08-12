@@ -138,6 +138,34 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* setuproutes */}
+          <Route
+  path="/setup"
+  element={
+    <ProtectedRoute>
+      <Setup />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/setup/services"
+  element={
+    <ProtectedRoute>
+      <SetupServices />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/setup/availability"
+  element={
+    <ProtectedRoute>
+      <SetupAvailability />
+    </ProtectedRoute>
+  }
+/>
         </Routes>
         
       </div>
