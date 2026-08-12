@@ -236,42 +236,89 @@ function Setup() {
         throw new Error("Your session expired. Please log in again.")
       }
 
-      const { data: existingProfile, error: usernameError } =
-        await supabase
-          .from("profiles")
-          .select("id")
-          .eq("username", username)
-          .neq("id", user.id)
-          .maybeSingle()
+      const { data: existingUsername, error: usernameError } =
+  await supabase
+    .from("business_profiles")
+    .select("id")
+    .eq("username", username)
+    .neq("user_id", user.id)
+    .maybeSingle()
 
-      if (usernameError) {
-        throw usernameError
-      }
+if (usernameError) {
+  throw usernameError
+}
 
-      if (existingProfile) {
-        toast.error("That booking username is already taken.")
-        return
-      }
+if (existingUsername) {
+  toast.error("That booking username is already taken.")
+  return
+}
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          business_name: businessName.trim(),
-          username,
-          business_category: businessCategory,
-          phone: phone.trim(),
-          description: description.trim(),
-          business_email: businessEmail.trim(),
-          logo_url: logoUrl || null,
-        })
-        .eq("id", user.id)
+// Keep the regular profile updated
+const { error: profileError } = await supabase
+  .from("profiles")
+  .update({
+    business_name: businessName.trim(),
+    username,
+    business_category: businessCategory,
+    phone: phone.trim(),
+    description: description.trim(),
+    business_email: businessEmail.trim(),
+    logo_url: logoUrl || null,
+  })
+  .eq("id", user.id)
 
-      if (error) {
-        throw error
-      }
+if (profileError) {
+  throw profileError
+}
 
-      toast.success("Business details saved!")
-      navigate("/setup/services")
+// See if this user already has a business_profiles row
+const { data: existingBusiness, error: businessLookupError } =
+  await supabase
+    .from("business_profiles")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle()
+
+if (businessLookupError) {
+  throw businessLookupError
+}
+
+let businessSaveError
+
+if (existingBusiness) {
+  const { error } = await supabase
+    .from("business_profiles")
+    .update({
+      business_name: businessName.trim(),
+      username,
+      description: description.trim(),
+      logo_url: logoUrl || null,
+      is_public: true,
+    })
+    .eq("user_id", user.id)
+
+  businessSaveError = error
+} else {
+  const { error } = await supabase
+    .from("business_profiles")
+    .insert({
+      user_id: user.id,
+      business_name: businessName.trim(),
+      username,
+      description: description.trim(),
+      logo_url: logoUrl || null,
+      is_public: true,
+    })
+
+  businessSaveError = error
+}
+
+if (businessSaveError) {
+  throw businessSaveError
+}
+
+toast.success("Business details saved!")
+navigate("/setup/services")
     } catch (error) {
       console.error("Business profile save error:", error)
 
