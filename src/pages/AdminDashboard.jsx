@@ -13,65 +13,130 @@ export default function AdminDashboard() {
     revenue: 0,
   })
 
+  const [betaApplications, setBetaApplications] = useState([])
+
   const ADMIN_EMAIL = "hello@yorly.co"
 
   useEffect(() => {
     const loadAdminDashboard = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession()
 
-      setSession(session)
+        if (sessionError) {
+          throw sessionError
+        }
 
-      console.log("ADMIN SESSION EMAIL:", session?.user?.email)
+        setSession(session)
 
-      if (!session?.user) {
+        console.log(
+          "ADMIN SESSION EMAIL:",
+          session?.user?.email
+        )
+
+        if (!session?.user) {
+          return
+        }
+
+        if (session.user.email !== ADMIN_EMAIL) {
+          return
+        }
+
+        const [
+          businessResult,
+          bookingResult,
+          betaCountResult,
+          revenueResult,
+          betaApplicationsResult,
+        ] = await Promise.all([
+          supabase
+            .from("business_profiles")
+            .select("*", {
+              count: "exact",
+              head: true,
+            }),
+
+          supabase
+            .from("bookings")
+            .select("*", {
+              count: "exact",
+              head: true,
+            }),
+
+          supabase
+            .from("beta_applications")
+            .select("*", {
+              count: "exact",
+              head: true,
+            }),
+
+          supabase
+            .from("bookings")
+            .select("amount")
+            .eq("payment_status", "Paid"),
+
+          supabase
+            .from("beta_applications")
+            .select("*")
+            .order("created_at", {
+              ascending: false,
+            }),
+        ])
+
+        if (businessResult.error) {
+          throw businessResult.error
+        }
+
+        if (bookingResult.error) {
+          throw bookingResult.error
+        }
+
+        if (betaCountResult.error) {
+          throw betaCountResult.error
+        }
+
+        if (revenueResult.error) {
+          throw revenueResult.error
+        }
+
+        if (betaApplicationsResult.error) {
+          throw betaApplicationsResult.error
+        }
+
+        const totalRevenue = (
+          revenueResult.data || []
+        ).reduce(
+          (sum, booking) =>
+            sum + Number(booking.amount || 0),
+          0
+        )
+
+        setStats({
+          businesses: businessResult.count || 0,
+          bookings: bookingResult.count || 0,
+          betaApplications:
+            betaCountResult.count || 0,
+          revenue: totalRevenue,
+        })
+
+        setBetaApplications(
+          betaApplicationsResult.data || []
+        )
+
+        console.log(
+          "Beta Applications:",
+          betaApplicationsResult.data || []
+        )
+      } catch (error) {
+        console.error(
+          "Admin dashboard load error:",
+          error
+        )
+      } finally {
         setLoading(false)
-        return
       }
-
-      if (session.user.email !== ADMIN_EMAIL) {
-        setLoading(false)
-        return
-      }
-
-      const [
-        businessResult,
-        bookingResult,
-        betaResult,
-        revenueResult,
-      ] = await Promise.all([
-        supabase
-          .from("business_profiles")
-          .select("*", { count: "exact", head: true }),
-
-        supabase
-          .from("bookings")
-          .select("*", { count: "exact", head: true }),
-
-        supabase
-          .from("beta_applications")
-          .select("*", { count: "exact", head: true }),
-
-        supabase
-          .from("bookings")
-          .select("amount")
-          .eq("payment_status", "Paid"),
-      ])
-
-      const totalRevenue = (revenueResult.data || []).reduce(
-        (sum, booking) => sum + Number(booking.amount || 0),
-        0
-      )
-
-      setStats({
-        businesses: businessResult.count || 0,
-        bookings: bookingResult.count || 0,
-        betaApplications: betaResult.count || 0,
-        revenue: totalRevenue,
-      })
-
-      setLoading(false)
     }
 
     loadAdminDashboard()
@@ -79,8 +144,10 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#020817] text-white flex items-center justify-center">
-        <p className="text-slate-400">Loading Yorly Admin...</p>
+      <main className="flex min-h-screen items-center justify-center bg-[#020817] text-white">
+        <p className="text-slate-400">
+          Loading Yorly Admin...
+        </p>
       </main>
     )
   }
@@ -106,7 +173,8 @@ export default function AdminDashboard() {
           </h1>
 
           <p className="mt-3 text-slate-400">
-            Monitor businesses, bookings, revenue, and beta activity.
+            Monitor businesses, bookings, revenue,
+            and beta activity.
           </p>
         </div>
 
@@ -138,9 +206,8 @@ export default function AdminDashboard() {
             description="We’ll load your newest business accounts here."
           />
 
-          <AdminPanel
-            title="Recent Beta Applications"
-            description="We’ll load your newest beta applicants here."
+          <BetaApplicationsPanel
+            applications={betaApplications}
           />
 
           <AdminPanel
@@ -182,6 +249,64 @@ function AdminPanel({ title, description }) {
       <p className="mt-2 text-sm leading-6 text-slate-400">
         {description}
       </p>
+    </div>
+  )
+}
+
+function BetaApplicationsPanel({ applications }) {
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-[#0d172b] p-6">
+      <div className="mb-5">
+        <h2 className="text-xl font-semibold">
+          Recent Beta Applications
+        </h2>
+
+        <p className="mt-2 text-sm text-slate-400">
+          Newest applications first.
+        </p>
+      </div>
+
+      {applications.length === 0 ? (
+        <p className="text-sm text-slate-500">
+          No beta applications yet.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {applications.slice(0, 5).map((application) => (
+            <div
+              key={application.id}
+              className="rounded-xl border border-slate-800 bg-[#08111f] p-4"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-white">
+                    {application.full_name}
+                  </p>
+
+                  <p className="mt-1 text-sm text-slate-400">
+                    {application.business_name ||
+                      "Business name not provided"}
+                  </p>
+                </div>
+
+                <span className="rounded-full bg-purple-500/10 px-3 py-1 text-xs font-semibold text-purple-300">
+                  {application.business_type}
+                </span>
+              </div>
+
+              <p className="mt-3 text-sm text-slate-400">
+                {application.email}
+              </p>
+
+              {application.goals && (
+                <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-300">
+                  {application.goals}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
