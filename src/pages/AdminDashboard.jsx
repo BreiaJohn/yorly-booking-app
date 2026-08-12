@@ -17,6 +17,8 @@ export default function AdminDashboard() {
 
   const [businesses, setBusinesses] = useState([])
 
+  const [recentBookings, setRecentBookings] = useState([])
+
   const ADMIN_EMAIL = "hello@yorly.co"
 
   useEffect(() => {
@@ -53,6 +55,7 @@ export default function AdminDashboard() {
           revenueResult,
           betaApplicationsResult,
           recentBusinessesResult,
+          recentBookingsResult,
         ] = await Promise.all([
           supabase
             .from("business_profiles")
@@ -92,7 +95,15 @@ export default function AdminDashboard() {
             .select("*")
             .order("created_at", { ascending: false })
             .limit(5),
+
+            supabase
+            .from("bookings")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(5),
         ])
+
+        
 
         if (businessResult.error) {
           throw businessResult.error
@@ -139,6 +150,9 @@ export default function AdminDashboard() {
 
         setBusinesses(
           recentBusinessesResult.data || [])
+
+        setRecentBookings(
+          recentBookingsResult.data || [])
 
         console.log(
           "Beta Applications:",
