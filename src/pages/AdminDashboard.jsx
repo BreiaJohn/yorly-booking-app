@@ -15,6 +15,8 @@ export default function AdminDashboard() {
 
   const [betaApplications, setBetaApplications] = useState([])
 
+  const [businesses, setBusinesses] = useState([])
+
   const ADMIN_EMAIL = "hello@yorly.co"
 
   useEffect(() => {
@@ -50,6 +52,7 @@ export default function AdminDashboard() {
           betaCountResult,
           revenueResult,
           betaApplicationsResult,
+          recentBusinessesResult,
         ] = await Promise.all([
           supabase
             .from("business_profiles")
@@ -83,6 +86,12 @@ export default function AdminDashboard() {
             .order("created_at", {
               ascending: false,
             }),
+
+            supabase
+            .from("business_profiles")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(5),
         ])
 
         if (businessResult.error) {
@@ -104,6 +113,9 @@ export default function AdminDashboard() {
         if (betaApplicationsResult.error) {
           throw betaApplicationsResult.error
         }
+        if (recentBusinessesResult.error) {
+          throw recentBusinessesResult.error
+}
 
         const totalRevenue = (
           revenueResult.data || []
@@ -124,6 +136,9 @@ export default function AdminDashboard() {
         setBetaApplications(
           betaApplicationsResult.data || []
         )
+
+        setBusinesses(
+          recentBusinessesResult.data || [])
 
         console.log(
           "Beta Applications:",
@@ -201,10 +216,36 @@ export default function AdminDashboard() {
         </section>
 
         <section className="mt-8 grid gap-6 lg:grid-cols-2">
-          <AdminPanel
-            title="Recent Businesses"
-            description="We’ll load your newest business accounts here."
-          />
+       <div className="rounded-2xl border border-slate-800 bg-[#0d172b] p-6">
+  <h2 className="text-xl font-semibold">Recent Businesses</h2>
+
+  <div className="mt-6 space-y-4">
+    {businesses.length === 0 ? (
+      <p className="text-slate-400">No businesses yet.</p>
+    ) : (
+      businesses.map((business) => (
+        <div
+          key={business.id}
+          className="flex items-center justify-between rounded-xl border border-slate-700 p-4"
+        >
+          <div>
+            <p className="font-semibold">
+              {business.business_name}
+            </p>
+
+            <p className="text-sm text-slate-400">
+              @{business.username}
+            </p>
+          </div>
+
+          <span className="text-xs text-slate-500">
+            {new Date(business.created_at).toLocaleDateString()}
+          </span>
+        </div>
+      ))
+    )}
+  </div>
+</div>
 
           <BetaApplicationsPanel
             applications={betaApplications}
