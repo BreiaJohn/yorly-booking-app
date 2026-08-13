@@ -12,6 +12,9 @@ function SetupServices() {
   const [duration, setDuration] = useState("60")
   const [description, setDescription] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [pricingType, setPricingType] = useState("fixed")
+  const [priceMin, setPriceMin] = useState("")
+  const [priceMax, setPriceMax] = useState("")
 
   useEffect(() => {
     fetchServices()
@@ -72,29 +75,44 @@ function SetupServices() {
       }
 
       const { data, error } = await supabase
-        .from("services")
-        .insert({
-          user_id: user.id,
-          name: name.trim(),
-          price: Number(price),
-          duration: Number(duration),
-          description: description.trim(),
-          active: true,
-        })
-        .select()
-        .single()
+  .from("services")
+  .insert({
+    user_id: user.id,
+    name,
+    price:
+      pricingType === "fixed"
+        ? Number(price)
+        : null,
+    pricing_type: pricingType,
+    price_min:
+      pricingType === "range" || pricingType === "starting_at"
+        ? Number(priceMin)
+        : null,
+    price_max:
+      pricingType === "range"
+        ? Number(priceMax)
+        : null,
+    duration,
+    description,
+  })
+  .select()
+  .single()
 
-      if (error) {
-        throw error
-      }
+if (error) {
+  throw error
+}
 
-      setServices((current) => [...current, data])
-      setName("")
-      setPrice("")
-      setDuration("60")
-      setDescription("")
+setServices((current) => [...current, data])
 
-      toast.success("Service added!")
+setName("")
+setPrice("")
+setPricingType("fixed")
+setPriceMin("")
+setPriceMax("")
+setDuration("60")
+setDescription("")
+
+toast.success("Service added!")
     } catch (error) {
       console.error(error)
       toast.error(error.message || "Could not add service.")
@@ -193,32 +211,123 @@ function SetupServices() {
                 />
               </div>
 
+              <div>
+  <label className="mb-2 block text-sm font-semibold text-slate-300">
+    Pricing type
+  </label>
+
+  <select
+    value={pricingType}
+    onChange={(event) => {
+      setPricingType(event.target.value)
+      setPrice("")
+      setPriceMin("")
+      setPriceMax("")
+    }}
+    className="w-full rounded-2xl border border-blue-400/20 bg-[#020617] px-4 py-3 text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/40"
+  >
+    <option value="fixed">Fixed Price</option>
+    <option value="starting_at">Starting At</option>
+    <option value="range">Price Range</option>
+    <option value="quote">Quote Required</option>
+  </select>
+</div>
+
               <div className="grid gap-5 sm:grid-cols-2">
                 <div>
-                  <label
-                    htmlFor="price"
-                    className="mb-2 block text-sm font-semibold text-slate-300"
-                  >
-                    Price
-                  </label>
+                  <div>
+  {pricingType === "fixed" && (
+    <>
+      <label
+        htmlFor="price"
+        className="mb-2 block text-sm font-semibold text-slate-300"
+      >
+        Price
+      </label>
 
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
-                      $
-                    </span>
+      <input
+        id="price"
+        type="number"
+        min="0"
+        step="0.01"
+        value={price}
+        onChange={(event) => setPrice(event.target.value)}
+        placeholder="$85"
+        required
+        className="w-full rounded-2xl border border-blue-400/20 bg-[#020617]/60 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/40"
+      />
+    </>
+  )}
 
-                    <input
-                      id="price"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={price}
-                      onChange={(event) => setPrice(event.target.value)}
-                      placeholder="85"
-                      required
-                      className="w-full rounded-2xl border border-blue-400/20 bg-[#020617]/60 py-3 pl-8 pr-4 text-white outline-none transition placeholder:text-slate-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/40"
-                    />
-                  </div>
+  {pricingType === "starting_at" && (
+    <>
+      <label className="mb-2 block text-sm font-semibold text-slate-300">
+        Starting at
+      </label>
+
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={priceMin}
+        onChange={(event) => setPriceMin(event.target.value)}
+        placeholder="$100"
+        required
+        className="w-full rounded-2xl border border-blue-400/20 bg-[#020617]/60 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/40"
+      />
+    </>
+  )}
+
+  {pricingType === "range" && (
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <label className="mb-2 block text-sm font-semibold text-slate-300">
+          Minimum
+        </label>
+
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={priceMin}
+          onChange={(event) => setPriceMin(event.target.value)}
+          placeholder="$50"
+          required
+          className="w-full rounded-2xl border border-blue-400/20 bg-[#020617]/60 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/40"
+        />
+      </div>
+
+      <div>
+        <label className="mb-2 block text-sm font-semibold text-slate-300">
+          Maximum
+        </label>
+
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={priceMax}
+          onChange={(event) => setPriceMax(event.target.value)}
+          placeholder="$100"
+          required
+          className="w-full rounded-2xl border border-blue-400/20 bg-[#020617]/60 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/40"
+        />
+      </div>
+    </div>
+  )}
+
+  {pricingType === "quote" && (
+    <div className="rounded-2xl border border-purple-400/20 bg-purple-500/5 px-4 py-3">
+      <p className="font-semibold text-purple-300">
+        Custom quote
+      </p>
+      <p className="mt-1 text-sm text-slate-400">
+        Clients will see “Contact for pricing.”
+      </p>
+    </div>
+  )}
+</div>
+
                 </div>
 
                 <div>
